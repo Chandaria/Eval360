@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+@theme {
+  --color-navy: #101826;
+  --color-parchment: #FAF7EF;
+  --color-gold: #B8912F;
+  --color-teal: #0E5C56;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-parchment text-navy font-body;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display text-navy;
+  }
+}
