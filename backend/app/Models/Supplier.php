@@ -18,4 +18,36 @@ class Supplier extends Model
         'phone',
         'address',
     ];
+
+    protected $appends = [
+        'current_score',
+    ];
+
+    public function evaluations()
+    {
+        return $this->hasMany(Evaluation::class);
+    }
+
+    public function latestApprovedEvaluation()
+    {
+        return $this->hasOne(Evaluation::class)->ofMany([
+            'period' => 'max',
+            'id' => 'max',
+        ], function ($query) {
+            $query->where('status', 'approved');
+        });
+    }
+
+    public function getCurrentScoreAttribute()
+    {
+        if ($this->relationLoaded('latestApprovedEvaluation') && $this->latestApprovedEvaluation) {
+            return round($this->latestApprovedEvaluation->total_score);
+        }
+        return null;
+    }
+
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
 }

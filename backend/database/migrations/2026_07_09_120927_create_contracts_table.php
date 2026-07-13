@@ -11,9 +11,12 @@ return new class extends Migration
         Schema::create('contracts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
+            $table->string('title');
             $table->date('start_date');
-            $table->date('end_date');
-            $table->enum('status', ['active', 'expiring', 'expired'])->default('active')->index();
+            $table->date('end_date')->nullable();
+            $table->decimal('value', 14, 2)->nullable();
+            $table->enum('status', ['active', 'expired', 'terminated', 'renewal_pending'])->default('active')->index();
+            $table->text('sla_terms')->nullable();
             $table->timestamps();
         });
     }

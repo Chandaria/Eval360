@@ -12,9 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('supplier_id')->constrained()->cascadeOnDelete();
             $table->foreignId('evaluator_id')->constrained('users')->cascadeOnDelete();
-            $table->integer('score')->index();
+            $table->float('total_score')->default(0);
             $table->string('period')->index(); // e.g. "2026-Q1"
-            $table->enum('status', ['pending', 'approved'])->default('pending')->index();
+            $table->enum('status', ['submitted', 'approved'])->default('submitted')->index();
             $table->text('comments')->nullable();
             $table->timestamps();
         });

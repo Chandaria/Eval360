@@ -1,52 +1,105 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import AppShell from './layouts/AppShell';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
-import Logo from './components/Logo';
+import AdminDashboard from './pages/AdminDashboard';
+import Suppliers from './pages/Suppliers';
+import SupplierDetail from './pages/SupplierDetail';
+import Contracts from './pages/Contracts';
+import { can } from './utils/permissions';
 
-// Dummy Sidebar for layout purposes
-function Layout({ children }) {
-  return (
-    <div className="min-h-screen bg-parchment flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-navy text-white flex flex-col shadow-lg z-10">
-        <div className="p-6 border-b border-gray-800 flex justify-center">
-          <Logo inverted={true} />
-        </div>
-        <nav className="flex-1 p-4 space-y-2 mt-4">
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg bg-teal bg-opacity-20 text-gold border border-teal border-opacity-30">
-            <span className="font-medium">Dashboard</span>
-          </a>
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-gray-300 transition-colors">
-            <span className="font-medium">Suppliers</span>
-          </a>
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-gray-300 transition-colors">
-            <span className="font-medium">Evaluations</span>
-          </a>
-          <a href="#" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-800 text-gray-300 transition-colors">
-            <span className="font-medium">Contracts</span>
-          </a>
-        </nav>
-        <div className="p-4 border-t border-gray-800 text-sm text-gray-400">
-          Manager Role
-        </div>
-      </aside>
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        {children}
-      </main>
-    </div>
-  );
+  if (loading) {
+    return <div className="min-h-screen bg-parchment flex items-center justify-center text-navy font-body">Loading...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen bg-parchment flex items-center justify-center text-navy font-body">Loading...</div>;
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+function RoleProtectedRoute({ permission, children }) {
+  const { user } = useAuth();
+  
+  if (!can(user, permission)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
+  return children;
 }
 
 function App() {
   return (
     <Router>
-      <Layout>
+      <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/dashboard/manager" replace />} />
-          <Route path="/dashboard/manager" element={<ManagerDashboard />} />
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          
+          <Route
+            element={
+              <ProtectedRoute>
+                <AppShell />
+              </ProtectedRoute>
+            }
+          >
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route 
+              path="/manager-dashboard" 
+              element={
+                <RoleProtectedRoute permission="dashboard.manager">
+                  <ManagerDashboard />
+                </RoleProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin-dashboard" 
+              element={
+                <RoleProtectedRoute permission="dashboard.admin">
+                  <AdminDashboard />
+                </RoleProtectedRoute>
+              } 
+            />
+            <Route path="/suppliers" element={<Suppliers />} />
+            <Route path="/suppliers/:id" element={<SupplierDetail />} />
+            <Route path="/contracts" element={<Contracts />} />
+            {/* Placeholders for future pages */}
+            <Route path="/evaluations" element={<div className="p-8 font-body">Evaluations Page Placeholder</div>} />
+            <Route path="/rankings" element={<div className="p-8 font-body">Rankings Page Placeholder</div>} />
+            {/* Catch-all redirect for unmatched routes (e.g., old /dashboard/manager) */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Route>
         </Routes>
-      </Layout>
+      </AuthProvider>
     </Router>
   );
 }

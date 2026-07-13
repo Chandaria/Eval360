@@ -9,7 +9,7 @@ class SupplierController extends Controller
 {
     public function index()
     {
-        return Supplier::latest()->get();
+        return Supplier::with('latestApprovedEvaluation')->latest()->paginate(20);
     }
 
     public function store(Request $request)
@@ -30,7 +30,7 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        return $supplier;
+        return $supplier->load(['contracts', 'latestApprovedEvaluation']);
     }
 
     public function update(Request $request, Supplier $supplier)

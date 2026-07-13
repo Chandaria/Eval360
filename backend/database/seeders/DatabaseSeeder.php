@@ -15,18 +15,29 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Create Users
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@eval360.test',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+        
         $manager = User::create([
             'name' => 'Manager User',
-            'email' => 'manager@eval360.com',
+            'email' => 'manager@eval360.test',
             'password' => Hash::make('password'),
-            'role' => 'manager',
+            'role' => 'procurement_manager',
         ]);
         
         $officer = User::create([
             'name' => 'Procurement Officer',
-            'email' => 'officer@eval360.com',
+            'email' => 'officer@eval360.test',
             'password' => Hash::make('password'),
-            'role' => 'officer',
+            'role' => 'procurement_officer',
+        ]);
+
+        $this->call([
+            EvaluationCriteriaSeeder::class,
         ]);
 
         // 2. Create Suppliers
@@ -54,28 +65,49 @@ class DatabaseSeeder extends Seeder
         foreach ($suppliers as $supplier) {
             Contract::create([
                 'supplier_id' => $supplier->id,
+                'title' => 'Master Services Agreement - ' . date('Y'),
                 'start_date' => Carbon::now()->subMonths(6),
-                'end_date' => Carbon::now()->addDays(rand(10, 120)), // some expiring soon
+                'end_date' => Carbon::now()->addDays(rand(10, 120)),
+                'value' => rand(50000, 500000),
                 'status' => 'active',
+                'sla_terms' => 'Standard 99.9% uptime. Quarterly performance reviews.',
             ]);
         }
 
         // 4. Create Evaluations for trend (last 6 periods)
         $periods = ['2025-Q3', '2025-Q4', '2026-Q1', '2026-Q2', '2026-Q3', '2026-Q4'];
+        $allCriteria = \App\Models\EvaluationCriteria::all();
         
         foreach ($suppliers as $index => $supplier) {
             foreach ($periods as $pIndex => $period) {
-                // Generate a score that slightly improves or fluctuates
+                // Generate a base performance
                 $baseScore = 60 + ($index * 5); 
-                $score = min(100, max(0, $baseScore + rand(-10, 15) + ($pIndex * 2)));
+                
+                $totalScore = 0;
+                $scoresData = [];
 
-                Evaluation::create([
+                foreach ($allCriteria as $criteria) {
+                    $rawScore = min(100, max(0, $baseScore + rand(-10, 15) + ($pIndex * 2)));
+                    $weightedScore = $rawScore * $criteria->weight;
+                    $totalScore += $weightedScore;
+
+                    $scoresData[] = new \App\Models\EvaluationScore([
+                        'criteria_id' => $criteria->id,
+                        'raw_score' => $rawScore,
+                        'weight_used' => $criteria->weight,
+                        'weighted_score' => $weightedScore,
+                    ]);
+                }
+
+                $evaluation = Evaluation::create([
                     'supplier_id' => $supplier->id,
                     'evaluator_id' => $manager->id,
-                    'score' => $score,
+                    'total_score' => $totalScore,
                     'period' => $period,
-                    'status' => ($period === '2026-Q4') ? 'pending' : 'approved', // some pending for the dashboard
+                    'status' => ($period === '2026-Q4') ? 'submitted' : 'approved', // some submitted for the dashboard
                 ]);
+
+                $evaluation->evaluation_scores()->saveMany($scoresData);
             }
         }
     }

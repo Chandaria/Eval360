@@ -14,7 +14,7 @@ class ManagerDashboardController extends Controller
     public function index()
     {
         // 1. Evaluations awaiting approval
-        $pendingEvaluationsCount = Evaluation::where('status', 'pending')->count();
+        $pendingEvaluationsCount = Evaluation::where('status', 'submitted')->count();
 
         // 2. Expiring Contracts (next 60 days)
         $sixtyDaysFromNow = Carbon::now()->addDays(60);
@@ -23,50 +23,61 @@ class ManagerDashboardController extends Controller
             ->count();
 
         // 3. Top and Bottom 5 Suppliers
-        // We aggregate the average score for each supplier
-        $suppliersWithScores = Supplier::withAvg('evaluations as avg_score', 'score')
-            ->having('avg_score', '!=', null)
-            ->orderBy('avg_score', 'desc')
-            ->get();
-
-        $topSuppliers = $suppliersWithScores->take(5)->map(function ($s) {
+        // Use the current_score accessor (latest approved evaluation)
+        $suppliers = Supplier::with(['latestApprovedEvaluation'])->get();
+        
+        $suppliersWithScores = $suppliers->map(function($supplier) {
             return [
-                'id' => $s->id,
-                'name' => $s->name,
-                'category' => $s->category,
-                'score' => round($s->avg_score)
+                'id' => $supplier->id,
+                'name' => $supplier->name,
+                'category' => $supplier->category,
+                'score' => $supplier->current_score
             ];
-        })->values();
+        });
 
-        $bottomSuppliers = $suppliersWithScores->reverse()->take(5)->map(function ($s) {
-            return [
-                'id' => $s->id,
-                'name' => $s->name,
-                'category' => $s->category,
-                'score' => round($s->avg_score)
-            ];
-        })->values();
+        // Sort descending for top, putting nulls at the end
+        $topSuppliers = $suppliersWithScores->sortByDesc(function ($s) {
+            return $s['score'] ?? -1;
+        })->take(5)->values();
+
+        // Sort ascending for bottom, filtering out nulls so N/A doesn't look like "worst"
+        $scoredSuppliers = $suppliersWithScores->filter(function ($s) {
+            return $s['score'] !== null;
+        });
+        
+        $bottomSuppliers = $scoredSuppliers->isEmpty() 
+            ? $suppliersWithScores->take(5)->values() 
+            : $scoredSuppliers->sortBy('score')->take(5)->values();
 
         // 4. 6-Period Trend Chart
         // Group evaluations by period and calculate the average score across all suppliers for that period
-        $trendData = Evaluation::select('period', DB::raw('AVG(score) as avg_score'))
-            ->groupBy('period')
-            ->orderBy('period', 'asc') // Assuming alphabetical ordering works for periods like "2025-Q3"
-            ->limit(6)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'period' => $item->period,
-                    'score' => round($item->avg_score)
-                ];
-            });
+        $allEvaluations = Evaluation::approved()->get();
+        $trendData = $allEvaluations->groupBy('period')->map(function($evals, $period) {
+            $totalScore = 0;
+            $count = 0;
+            foreach($evals as $evaluation) {
+                $totalScore += $evaluation->total_score;
+                $count++;
+            }
+            return [
+                'period' => $period,
+                'score' => $count > 0 ? round($totalScore / $count) : null
+            ];
+        })->sortBy('period')->take(6)->values();
 
         return response()->json([
+            'total_suppliers' => Supplier::count(),
             'pending_evaluations' => $pendingEvaluationsCount,
             'expiring_contracts' => $expiringContractsCount,
             'top_suppliers' => $topSuppliers,
             'bottom_suppliers' => $bottomSuppliers,
             'trend' => $trendData
         ]);
+    }
+
+    public function pending()
+    {
+        $pending = Evaluation::where('status', 'submitted')->with(['supplier', 'evaluator'])->latest()->get();
+        return response()->json($pending);
     }
 }
