@@ -60,11 +60,11 @@ export default function AdminDashboard() {
   const getRoleStyle = (role) => {
     switch (role) {
       case 'admin':
-        return 'bg-gold bg-opacity-20 text-yellow-800 border-gold border-opacity-30';
+        return 'bg-gold/20 text-yellow-800 border-gold/30';
       case 'procurement_officer':
-        return 'bg-teal bg-opacity-20 text-teal-800 border-teal border-opacity-30';
+        return 'bg-teal/20 text-teal-800 border-teal/30';
       case 'procurement_manager':
-        return 'bg-navy bg-opacity-10 text-navy border-navy border-opacity-20';
+        return 'bg-navy/10 text-navy border-navy/20';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }

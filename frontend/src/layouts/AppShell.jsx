@@ -10,7 +10,7 @@ export default function AppShell() {
   const navLinkClass = ({ isActive }) =>
     `flex items-center space-x-3 p-3 rounded-lg transition-colors border ${
       isActive
-        ? 'bg-teal bg-opacity-20 text-gold border-teal border-opacity-30'
+        ? 'bg-teal/20 text-gold border-teal/30'
         : 'hover:bg-gray-800 text-gray-300 border-transparent'
     }`;
 
@@ -23,17 +23,17 @@ export default function AppShell() {
         </div>
         
         <nav className="flex-1 p-3 space-y-2 mt-2">
-          <NavLink to="/dashboard" className={navLinkClass}>
-            <span className="font-medium text-sm">Dashboard</span>
-          </NavLink>
-          {can(user, 'dashboard.manager') && (
-            <NavLink to="/manager-dashboard" className={navLinkClass}>
-              <span className="font-medium text-sm">Manager Dashboard</span>
-            </NavLink>
-          )}
-          {can(user, 'dashboard.admin') && (
+          {user?.role === 'admin' ? (
             <NavLink to="/admin-dashboard" className={navLinkClass}>
-              <span className="font-medium text-sm">Admin Dashboard</span>
+              <span className="font-medium text-sm">Dashboard</span>
+            </NavLink>
+          ) : user?.role === 'procurement_manager' ? (
+            <NavLink to="/manager-dashboard" className={navLinkClass}>
+              <span className="font-medium text-sm">Dashboard</span>
+            </NavLink>
+          ) : (
+            <NavLink to="/dashboard" className={navLinkClass}>
+              <span className="font-medium text-sm">Dashboard</span>
             </NavLink>
           )}
           <NavLink to="/suppliers" className={navLinkClass}>

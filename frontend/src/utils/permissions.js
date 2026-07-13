@@ -18,7 +18,7 @@ export const can = (user, action) => {
 
   const allowedRoles = matrix[action];
   if (!allowedRoles) {
-    return true; 
+    return false; 
   }
 
   return allowedRoles.includes(role);
