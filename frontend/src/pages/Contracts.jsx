@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { can } from '../utils/permissions';
+import ContractForm from '../components/ContractForm';
+import ContractDetailModal from '../components/ContractDetailModal';
 
 export default function Contracts() {
   const { user } = useAuth();
@@ -10,14 +12,9 @@ export default function Contracts() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [apiError, setApiError] = useState('');
-  const [formData, setFormData] = useState({
-    supplier_id: '',
-    title: '',
-    start_date: '',
-    end_date: '',
-    value: '',
-    sla_terms: ''
-  });
+  
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedContractId, setSelectedContractId] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -38,24 +35,11 @@ export default function Contracts() {
     fetchData();
   }, []);
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleCreate = async (formData) => {
     setApiError('');
     try {
       await api.post('/contracts', formData);
       setShowForm(false);
-      setFormData({
-        supplier_id: '',
-        title: '',
-        start_date: '',
-        end_date: '',
-        value: '',
-        sla_terms: ''
-      });
       fetchData();
     } catch (error) {
       console.error('Failed to create contract', error);
@@ -93,42 +77,12 @@ export default function Contracts() {
       {showForm && (
         <div className="bg-navy p-6 rounded-xl shadow-lg mb-8 border border-gray-800 text-parchment">
           <h2 className="text-xl font-display font-semibold mb-4">New Contract</h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Supplier</label>
-              <select name="supplier_id" required value={formData.supplier_id} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white">
-                <option value="">Select a supplier...</option>
-                {suppliers.map(s => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Title</label>
-              <input type="text" name="title" required value={formData.title} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Start Date</label>
-              <input type="date" name="start_date" required value={formData.start_date} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">End Date</label>
-              <input type="date" name="end_date" value={formData.end_date} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white" />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-300 mb-1">Value ($)</label>
-              <input type="number" step="0.01" min="0" name="value" value={formData.value} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm text-gray-300 mb-1">SLA Terms</label>
-              <textarea name="sla_terms" value={formData.sla_terms} onChange={handleChange} className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded focus:ring-gold focus:border-gold text-white" rows="2"></textarea>
-            </div>
-            <div className="md:col-span-2 flex justify-end mt-2">
-              <button type="submit" className="bg-gold hover:bg-gold/90 text-navy font-medium px-6 py-2 rounded shadow transition-colors">
-                Save Contract
-              </button>
-            </div>
-          </form>
+          <ContractForm 
+            suppliers={suppliers} 
+            onSubmit={handleCreate} 
+            onCancel={() => setShowForm(false)} 
+            submitLabel="Create Contract" 
+          />
         </div>
       )}
 
@@ -148,7 +102,11 @@ export default function Contracts() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {contracts.map(contract => (
-                <tr key={contract.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr 
+                  key={contract.id} 
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  onClick={() => { setSelectedContractId(contract.id); setShowDetailModal(true); }}
+                >
                   <td className="p-4">
                     <div className="font-medium text-navy">{contract.title}</div>
                   </td>
@@ -180,6 +138,18 @@ export default function Contracts() {
           </table>
         )}
       </div>
+
+      {showDetailModal && selectedContractId && (
+        <ContractDetailModal 
+          contractId={selectedContractId}
+          suppliers={suppliers}
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedContractId(null);
+          }}
+          onSuccess={() => fetchData()}
+        />
+      )}
     </div>
   );
 }

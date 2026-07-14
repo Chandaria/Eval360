@@ -12,9 +12,36 @@ use Illuminate\Support\Facades\DB;
 
 class EvaluationController extends Controller
 {
+    public function indexAll(Request $request)
+    {
+        $query = Evaluation::with(['supplier', 'evaluator', 'approver']);
+
+        if ($request->has('status') && in_array($request->status, ['submitted', 'approved'])) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('supplier_id') && $request->supplier_id) {
+            $query->where('supplier_id', $request->supplier_id);
+        }
+
+        $query->orderBy('period', 'desc');
+
+        if ($request->has('limit')) {
+            return response()->json($query->take($request->limit)->get());
+        }
+
+        return $query->paginate(20);
+    }
+
     public function index(Supplier $supplier)
     {
-        return $supplier->evaluations()->with('evaluation_scores.criteria')->latest()->paginate(20);
+        return $supplier->evaluations()->with('evaluation_scores.criteria')->orderBy('period', 'desc')->paginate(20);
+    }
+
+    public function show(Evaluation $evaluation)
+    {
+        $evaluation->load(['supplier', 'evaluator', 'approver', 'evaluation_scores.criteria']);
+        return response()->json($evaluation);
     }
 
     public function store(Request $request, Supplier $supplier)

@@ -10,6 +10,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EvaluationCriteriaController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\RankingController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -35,7 +36,9 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Evaluations
+    Route::get('evaluations', [EvaluationController::class, 'indexAll']);
     Route::get('evaluations/pending', [ManagerDashboardController::class, 'pending'])->middleware('role:admin,procurement_manager');
+    Route::get('evaluations/{evaluation}', [EvaluationController::class, 'show']);
     Route::post('evaluations/{evaluation}/approve', [EvaluationController::class, 'approve'])->middleware('role:admin,procurement_manager');
     
     Route::get('suppliers/{supplier}/evaluations', [EvaluationController::class, 'index']);
@@ -55,6 +58,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('contracts/{contract}', [ContractController::class, 'destroy']);
     });
     
+    // Rankings
+    Route::get('rankings', [RankingController::class, 'index']);
+
     // Dashboards
     Route::get('dashboard', [\App\Http\Controllers\DashboardController::class, 'index']);
     Route::get('dashboard/manager', [ManagerDashboardController::class, 'index'])->middleware('role:admin,procurement_manager');

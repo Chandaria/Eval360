@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../api/axios';
+import ScoreRing from '../components/ScoreRing';
+import DashboardHeader from '../components/DashboardHeader';
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -8,6 +10,8 @@ export default function Dashboard() {
     average_score: null
   });
   const [loading, setLoading] = useState(true);
+  const [recentEvaluations, setRecentEvaluations] = useState([]);
+  const [loadingRecent, setLoadingRecent] = useState(true);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -20,15 +24,25 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
+    
+    const fetchRecentEvaluations = async () => {
+      try {
+        const res = await api.get('/evaluations?limit=5');
+        setRecentEvaluations(res.data);
+      } catch (err) {
+        console.error('Failed to fetch recent evaluations', err);
+      } finally {
+        setLoadingRecent(false);
+      }
+    };
+    
     fetchStats();
+    fetchRecentEvaluations();
   }, []);
 
   return (
     <div className="p-8">
-      <header className="mb-8">
-        <h1 className="text-3xl font-display font-semibold text-navy">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Overview of supplier performance and contracts.</p>
-      </header>
+      <DashboardHeader />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* KPI Card 1 */}
@@ -54,6 +68,38 @@ export default function Dashboard() {
           <div className="text-4xl font-mono text-navy mt-auto font-medium">
             {loading ? '-' : stats.active_contracts}
           </div>
+        </div>
+      </div>
+
+      {/* Recent Evaluations Widget */}
+      <div className="mt-8 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden max-w-4xl">
+        <div className="p-6 border-b border-gray-100">
+          <h3 className="font-display font-semibold text-navy">Recent Evaluations</h3>
+        </div>
+        <div className="p-0">
+          {loadingRecent ? (
+            <div className="p-8 text-center text-gray-500">Loading recent evaluations...</div>
+          ) : recentEvaluations.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">No evaluations found.</div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {recentEvaluations.map(evalData => (
+                <li key={evalData.id} className="p-4 hover:bg-gray-50/50 transition-colors flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <ScoreRing score={Math.round(evalData.total_score)} size="xs" />
+                    <span className="font-medium text-navy">
+                      {evalData.supplier?.name || `Supplier #${evalData.supplier_id}`}
+                    </span>
+                  </div>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    evalData.status === 'approved' ? 'bg-emerald/10 text-emerald' : 'bg-amber/10 text-amber'
+                  }`}>
+                    {evalData.status === 'submitted' ? 'Pending' : 'Approved'}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>

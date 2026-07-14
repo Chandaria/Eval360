@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 import ScoreRing from '../components/ScoreRing';
+import DashboardHeader from '../components/DashboardHeader';
 
 export default function ManagerDashboard() {
   const [data, setData] = useState(null);
@@ -44,10 +45,7 @@ export default function ManagerDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto p-8 font-body">
-      <header className="mb-8 border-b border-gray-200 pb-4">
-        <h1 className="text-4xl font-display font-semibold text-navy">Manager Dashboard</h1>
-        <p className="text-gray-500 mt-2">Oversight, approvals, and analytical trends.</p>
-      </header>
+      <DashboardHeader />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
@@ -91,6 +89,26 @@ export default function ManagerDashboard() {
                     activeDot={{ r: 6, strokeWidth: 0, fill: 'var(--color-navy)' }} 
                   />
                 </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Category Averages Chart */}
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <h2 className="text-2xl font-display font-medium text-navy mb-6">Average Score by Category</h2>
+            <div className="h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={data.category_averages}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis dataKey="category" axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dy={10} />
+                  <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{fill: '#9ca3af', fontSize: 12}} dx={-10} />
+                  <Tooltip 
+                    cursor={{fill: '#f9fafb'}}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', fontFamily: 'var(--font-mono)' }}
+                    labelStyle={{ fontWeight: 'bold', color: 'var(--color-navy)', fontFamily: 'var(--font-body)' }}
+                  />
+                  <Bar dataKey="average_score" fill="var(--color-gold)" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>

@@ -99,12 +99,15 @@ class DatabaseSeeder extends Seeder
                     ]);
                 }
 
+                $status = ($period === '2026-Q4') ? 'submitted' : 'approved';
                 $evaluation = Evaluation::create([
                     'supplier_id' => $supplier->id,
-                    'evaluator_id' => $manager->id,
+                    'evaluator_id' => $officer->id, // Let's make officer the evaluator, manager the approver
                     'total_score' => $totalScore,
                     'period' => $period,
-                    'status' => ($period === '2026-Q4') ? 'submitted' : 'approved', // some submitted for the dashboard
+                    'status' => $status,
+                    'approved_by' => $status === 'approved' ? $manager->id : null,
+                    'approved_at' => $status === 'approved' ? Carbon::now()->subDays(rand(1, 30)) : null,
                 ]);
 
                 $evaluation->evaluation_scores()->saveMany($scoresData);

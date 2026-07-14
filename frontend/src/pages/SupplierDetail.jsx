@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import api from '../api/axios';
 import ScoreRing from '../components/ScoreRing';
 import EvaluationModal from '../components/EvaluationModal';
@@ -9,6 +9,10 @@ import { can } from '../utils/permissions';
 export default function SupplierDetail() {
   const { user } = useAuth();
   const { id } = useParams();
+  const location = useLocation();
+  const backLink = (location.state?.from || '/suppliers') + (location.state?.search ? `?${location.state.search}` : '');
+  const backTitle = location.state?.title || 'Suppliers';
+
   const [supplier, setSupplier] = useState(null);
   const [evaluations, setEvaluations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,11 +69,23 @@ export default function SupplierDetail() {
 
   return (
     <div className="p-8 font-body max-w-6xl mx-auto">
-      {/* Breadcrumbs */}
-      <div className="mb-6 flex items-center text-sm text-gray-500 space-x-2">
-        <Link to="/suppliers" className="hover:text-teal transition-colors">Suppliers</Link>
-        <span>/</span>
-        <span className="text-gray-900 font-medium">{supplier.name}</span>
+      {/* Navigation & Breadcrumbs */}
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div className="flex items-center text-sm text-gray-500 space-x-2">
+          <Link to={backLink} className="hover:text-teal transition-colors">{backTitle}</Link>
+          <span>/</span>
+          <span className="text-gray-900 font-medium">{supplier.name}</span>
+        </div>
+        
+        <Link 
+          to={backLink}
+          className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-navy transition-colors bg-white px-3 py-1.5 border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+        >
+          <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to {backTitle}
+        </Link>
       </div>
 
       {/* Header Section */}

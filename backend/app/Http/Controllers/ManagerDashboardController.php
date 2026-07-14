@@ -65,13 +65,24 @@ class ManagerDashboardController extends Controller
             ];
         })->sortBy('period')->take(6)->values();
 
+        // 5. Category Averages
+        $categoryAverages = $suppliersWithScores->filter(function($s) {
+            return $s['score'] !== null;
+        })->groupBy('category')->map(function($suppliers, $category) {
+            return [
+                'category' => $category,
+                'average_score' => round($suppliers->avg('score'), 1)
+            ];
+        })->values();
+
         return response()->json([
             'total_suppliers' => Supplier::count(),
             'pending_evaluations' => $pendingEvaluationsCount,
             'expiring_contracts' => $expiringContractsCount,
             'top_suppliers' => $topSuppliers,
             'bottom_suppliers' => $bottomSuppliers,
-            'trend' => $trendData
+            'trend' => $trendData,
+            'category_averages' => $categoryAverages
         ]);
     }
 

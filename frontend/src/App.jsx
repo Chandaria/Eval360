@@ -3,12 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './context/AuthContext';
 import AppShell from './layouts/AppShell';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import ManagerDashboard from './pages/ManagerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import DashboardWrapper from './pages/DashboardWrapper';
 import Suppliers from './pages/Suppliers';
 import SupplierDetail from './pages/SupplierDetail';
 import Contracts from './pages/Contracts';
+import Evaluations from './pages/Evaluations';
+import Rankings from './pages/Rankings';
+import Users from './pages/Users';
 import { can } from './utils/permissions';
 
 function ProtectedRoute({ children }) {
@@ -72,30 +73,22 @@ function App() {
             }
           >
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route 
-              path="/manager-dashboard" 
-              element={
-                <RoleProtectedRoute permission="dashboard.manager">
-                  <ManagerDashboard />
-                </RoleProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/admin-dashboard" 
-              element={
-                <RoleProtectedRoute permission="dashboard.admin">
-                  <AdminDashboard />
-                </RoleProtectedRoute>
-              } 
-            />
+            <Route path="/dashboard" element={<DashboardWrapper />} />
+            
+            {/* Redirect old dashboard routes to the consolidated dashboard */}
+            <Route path="/admin-dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/manager-dashboard" element={<Navigate to="/dashboard" replace />} />
+            
+            <Route path="/users" element={
+              <RoleProtectedRoute permission="dashboard.admin">
+                <Users />
+              </RoleProtectedRoute>
+            } />
             <Route path="/suppliers" element={<Suppliers />} />
             <Route path="/suppliers/:id" element={<SupplierDetail />} />
             <Route path="/contracts" element={<Contracts />} />
-            {/* Placeholders for future pages */}
-            <Route path="/evaluations" element={<div className="p-8 font-body">Evaluations Page Placeholder</div>} />
-            <Route path="/rankings" element={<div className="p-8 font-body">Rankings Page Placeholder</div>} />
-            {/* Catch-all redirect for unmatched routes (e.g., old /dashboard/manager) */}
+            <Route path="/evaluations" element={<Evaluations />} />
+            <Route path="/rankings" element={<Rankings />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Route>
         </Routes>
