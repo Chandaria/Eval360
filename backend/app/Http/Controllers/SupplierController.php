@@ -30,7 +30,7 @@ class SupplierController extends Controller
 
     public function show(Supplier $supplier)
     {
-        return $supplier->load(['contracts', 'latestApprovedEvaluation']);
+        return Supplier::with(['contracts', 'latestApprovedEvaluation'])->findOrFail($supplier->id);
     }
 
     public function update(Request $request, Supplier $supplier)

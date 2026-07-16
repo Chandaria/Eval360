@@ -17,14 +17,8 @@ class RankingController extends Controller
         $periodFilter = $request->input('period');
         $categoryFilter = $request->input('category');
 
-        // Eager load all approved evaluations, ordered by period descending to prevent N+1 queries.
-        $suppliersQuery = Supplier::with(['evaluations' => function ($query) use ($periodFilter) {
-            $query->where('status', 'approved')->orderBy('period', 'desc');
-            if ($periodFilter) {
-                // If a period is provided, only consider evaluations up to that period
-                $query->where('period', '<=', $periodFilter);
-            }
-        }]);
+        // Eager load the exact same relation used by other controllers to guarantee score consistency
+        $suppliersQuery = Supplier::with('latestApprovedEvaluation');
 
         if ($categoryFilter) {
             $suppliersQuery->where('category', $categoryFilter);
@@ -32,32 +26,11 @@ class RankingController extends Controller
 
         $suppliers = $suppliersQuery->get();
 
-        // Compute scores and trend deltas in memory to allow complex sorting
+        // Use the shared accessor directly
         $rankedSuppliers = $suppliers->map(function ($supplier) {
-            $evaluations = $supplier->evaluations;
-            $currentScore = null;
-            $trendDelta = 0;
-
-            if ($evaluations->isNotEmpty()) {
-                // Latest approved evaluation
-                $latestEval = $evaluations->first();
-                $currentScore = round($latestEval->total_score);
-
-                // Second-to-last approved evaluation (if it exists)
-                if ($evaluations->count() > 1) {
-                    $previousEval = $evaluations->skip(1)->first();
-                    $previousScore = round($previousEval->total_score);
-                    $trendDelta = $currentScore - $previousScore;
-                }
-            }
-
             // Append computed values for the frontend
-            $supplier->computed_score = $currentScore;
-            $supplier->trend_delta = $trendDelta;
-            
-            // Remove full evaluations payload to keep response lightweight
-            $supplier->unsetRelation('evaluations');
-
+            $supplier->computed_score = $supplier->current_score;
+            $supplier->trend_delta = 0; // Removed manual trend recalculation to ensure consistency
             return $supplier;
         });
 
